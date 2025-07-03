@@ -7,11 +7,7 @@ dotenv.config({ path: '.env' });
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-const git = simpleGit();
-
 export async function getCommitMessageFromAI(diff: string): Promise<{ message: string; description: string }> {
-
-    console.log("diff is", diff);
     const prompt = `
     You are an expert software engineer and git user.
     
@@ -26,7 +22,7 @@ export async function getCommitMessageFromAI(diff: string): Promise<{ message: s
     
     Example response:
     {
-      "message": "feat: add multi-device support",
+      "message": "feat(add feat or fix according to the diffs): add multi-device support",
       "description": "Introduces support for multiple devices, allowing users to manage and sync data across different hardware. This enhances flexibility and user experience."
     }
     
