@@ -109,6 +109,8 @@ export async function mergeWithMain() {
     }
     else {
         console.log('No changes to commit after merge.');
+        finalMessage = 'Merge main into feature branch';
+        finalDescription = 'This commit merges the latest changes from main into the current feature branch.';
     }
     // Push updated feature branch
     await git.push('origin', currentBranch);
