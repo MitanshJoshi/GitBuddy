@@ -1,6 +1,9 @@
 import { simpleGit } from 'simple-git';
 import inquirer from 'inquirer';
 import { getCommitMessageFromAI } from '../utils/commitMessageAI.js'; // You need to implement this
+import { exec } from 'child_process';
+import util from 'util';
+const execAsync = util.promisify(exec);
 
 const git = simpleGit();
 
@@ -139,16 +142,22 @@ export async function mergeWithMain(): Promise<void> {
 
   if (shouldPR) {
     // Create PR using GitHub CLI
-    const { exec } = await import('child_process');
-    const util = await import('util');
-    const execAsync = util.promisify(exec);
-  
     try {
-      const cmd = `gh pr create --title "${finalMessage}"${finalDescription ? ` --body "${finalDescription}"` : ''} --base main --head ${currentBranch}`;
+      const cmd = `gh pr create --base main --head ${currentBranch}`;
       await execAsync(cmd);
       console.log('Pull request created!');
-    } catch (err) {
-      console.error('Failed to create pull request:', err);
+    } catch (err: any) {
+      if (err.stderr && err.stderr.includes('already exists')) {
+        // Extract the PR URL from the error message if present
+        const match = err.stderr.match(/https:\/\/github\.com\/[^\s]+/);
+        if (match) {
+          console.log(`A pull request for this branch already exists: ${match[0]}`);
+        } else {
+          console.log('A pull request for this branch already exists.');
+        }
+      } else {
+        console.error('Failed to create pull request:', err);
+      }
     }
   }
 }
