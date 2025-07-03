@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { mergeWithMain } from "./commands/mergeWithMain.js";
 import { exec } from 'child_process';
 import util from 'util';
+import { stashManager } from "./commands/stashManager.js";
 const execAsync = util.promisify(exec);
 async function mainMenu() {
     console.log('Welcome to GitBuddy!');
@@ -16,6 +17,7 @@ async function mainMenu() {
             choices: [
                 'Make a branch',
                 'Merge with main and commit your changes',
+                'Stash Management (list/apply/drop/create)',
                 'GitHub Account Options',
                 'Exit'
             ],
@@ -27,6 +29,9 @@ async function mainMenu() {
             break;
         case 'Merge with main and commit your changes':
             await mergeWithMain();
+            break;
+        case 'Stash Management (list/apply/drop/create)':
+            await stashManager();
             break;
         case 'GitHub Account Options':
             await githubAccountMenu();
