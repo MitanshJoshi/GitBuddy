@@ -122,6 +122,8 @@ export async function mergeWithMain(): Promise<void> {
     console.log('Changes committed.');
   } else {
     console.log('No changes to commit after merge.');
+    finalMessage = 'Merge main into feature branch';
+    finalDescription = 'This commit merges the latest changes from main into the current feature branch.';
   }
 
   // Push updated feature branch
