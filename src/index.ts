@@ -3,6 +3,9 @@ import inquirer from "inquirer";
 import { makeBranch } from "./commands/makeBranch.js";
 import 'dotenv/config';
 import { mergeWithMain } from "./commands/mergeWithMain.js";
+import { exec } from 'child_process';
+import util from 'util';
+const execAsync = util.promisify(exec);
 
 
 async function mainMenu() {
@@ -15,7 +18,7 @@ async function mainMenu() {
       choices: [
         'Make a branch',
         'Merge with main and commit your changes',
-        'Switch GitHub account',
+        'GitHub Account Options',
         'Exit'
       ],
     },
@@ -28,13 +31,49 @@ async function mainMenu() {
     case 'Merge with main and commit your changes':
       await mergeWithMain();
       break;
-    case 'Switch GitHub account':
-      // Call account switch logic
+    case 'GitHub Account Options':
+      await githubAccountMenu();
       break;
     case 'Exit':
       console.log('Goodbye!');
       process.exit(0);
   }
+}
+
+async function githubAccountMenu() {
+  const { ghAction } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'ghAction',
+      message: 'GitHub Account Options:',
+      choices: [
+        'Switch account (interactive)',
+        'Switch to a specific account',
+        'Show authenticated accounts',
+        'Back'
+      ]
+    }
+  ]);
+
+  switch (ghAction) {
+    case 'Switch account (interactive)':
+      await execAsync('gh auth switch');
+      break;
+    case 'Switch to a specific account':
+      const { username } = await inquirer.prompt([
+        { type: 'input', name: 'username', message: 'GitHub username:' }
+      ]);
+      await execAsync(`gh auth switch --user ${username}`);
+      break;
+    case 'Show authenticated accounts':
+      const { stdout } = await execAsync('gh auth status');
+      console.log(stdout);
+      break;
+    case 'Back':
+      return;
+  }
+  // After action, show the menu again
+  await githubAccountMenu();
 }
 
 mainMenu().catch((err) => {
