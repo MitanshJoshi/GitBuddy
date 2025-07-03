@@ -61,7 +61,14 @@ export async function stashManager() {
             console.log(`Dropped stash ${idx}.`);
         }
         if (action === 'create') {
-            await git.stash();
+            const { message } = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'message',
+                    message: 'Enter a message for the new stash:'
+                }
+            ]);
+            await git.stash(['push', '-m', message]);
             console.log('Created new stash.');
         }
     }
