@@ -37,6 +37,11 @@ export async function stashManager() {
             }
         }
         if (action === 'apply' && stashChoices.length > 0) {
+            const status = await git.status();
+            if (status.files.length > 0) {
+                console.log('You have local changes. Please commit or stash them before applying another stash.');
+                continue;
+            }
             const { idx } = await inquirer.prompt([
                 {
                     type: 'list',
@@ -61,7 +66,14 @@ export async function stashManager() {
             console.log(`Dropped stash ${idx}.`);
         }
         if (action === 'create') {
-            await git.stash();
+            const { message } = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'message',
+                    message: 'Enter a message for the new stash:'
+                }
+            ]);
+            await git.stash(['push', '-m', message]);
             console.log('Created new stash.');
         }
     }
