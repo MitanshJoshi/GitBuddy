@@ -1,7 +1,32 @@
-import inquirer from 'inquirer';
 import { simpleGit } from 'simple-git';
+import inquirer from 'inquirer';
+import { getCommitMessageFromAI } from '../utils/commitMessageAI.js'; // You need to implement this
 
 const git = simpleGit();
+
+async function getSuggestedCommitMessage(): Promise<{ message: string; description: string }> {
+    // Get the full diff or summary
+    const diff = await git.diff(['main']);
+    // Call your AI helper with the diff
+    const aiResult = await getCommitMessageFromAI(diff);
+  
+    // Fallback if AI fails
+    if (!aiResult || !aiResult.message) {
+      const diffSummary = await git.diffSummary(['main']);
+      const filesChanged = diffSummary.files.map(f => f.file).join(', ');
+      return {
+        message: filesChanged
+          ? `Merge main into feature branch, update: ${filesChanged}`
+          : 'Merge main into feature branch',
+        description: `This commit merges the latest changes from main into the current feature branch and updates the following files: ${filesChanged}`,
+      };
+    }
+  
+    return {
+      message: aiResult.message,
+      description: aiResult.description || '',
+    };
+  }
 
 export async function mergeWithMain(): Promise<void> {
   // Get the current branch name
@@ -54,19 +79,45 @@ export async function mergeWithMain(): Promise<void> {
   // Show status and prompt for commit if needed
   const postMergeStatus = await git.status();
   if (postMergeStatus.files.length > 0) {
-    const { shouldCommit } = await inquirer.prompt([
+    // 1. Generate suggestion
+    const { message, description } = await getSuggestedCommitMessage();
+
+    // 2. Prompt user to accept or edit
+    const { useSuggested } = await inquirer.prompt([
       {
         type: 'confirm',
-        name: 'shouldCommit',
-        message: 'There are changes to commit after merge. Commit now?',
+        name: 'useSuggested',
+        message: `Suggested commit message:\n"${message}"\n\nDescription:\n"${description}"\n\nUse this?`,
         default: true,
       },
     ]);
-    if (shouldCommit) {
-      await git.add('.');
-      await git.commit(`Merge main into ${currentBranch}`);
-      console.log('Changes committed.');
+
+    let finalMessage = message;
+    let finalDescription = description;
+
+    if (!useSuggested) {
+      // 3. Prompt for custom input, with suggestion as default
+      const custom = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'customMessage',
+          message: 'Enter commit message:',
+          default: message,
+        },
+        {
+          type: 'input',
+          name: 'customDescription',
+          message: 'Enter commit description (optional):',
+          default: description,
+        },
+      ]);
+      finalMessage = custom.customMessage;
+      finalDescription = custom.customDescription;
     }
+
+    await git.add('.');
+    await git.commit(`${finalMessage}\n\n${finalDescription}`);
+    console.log('Changes committed.');
   } else {
     console.log('No changes to commit after merge.');
   }
