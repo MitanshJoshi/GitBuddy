@@ -10,7 +10,7 @@ import { summarizeSinceLastRelease } from "./commands/summarizeSinceLastRelease.
 const execAsync = util.promisify(exec);
 
 async function mainMenu() {
-  console.log("Welcome to GitBuddy!");
+  console.log("Welcome to GitBuddy!!!");
   const { action } = await inquirer.prompt([
     {
       type: "list",
