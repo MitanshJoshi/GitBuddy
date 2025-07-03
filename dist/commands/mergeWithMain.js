@@ -27,6 +27,8 @@ export async function mergeWithMain() {
     // Get the current branch name
     const status = await git.status();
     const currentBranch = status.current;
+    let finalMessage = '';
+    let finalDescription = '';
     // Confirm the feature branch (optional, for safety)
     if (currentBranch === 'main') {
         console.log("You're already on main. Please switch to your feature branch first.");
@@ -80,8 +82,8 @@ export async function mergeWithMain() {
                 default: true,
             },
         ]);
-        let finalMessage = message;
-        let finalDescription = description;
+        finalMessage = message;
+        finalDescription = description;
         if (!useSuggested) {
             // 3. Prompt for custom input, with suggestion as default
             const custom = await inquirer.prompt([
@@ -125,7 +127,7 @@ export async function mergeWithMain() {
         const util = await import('util');
         const execAsync = util.promisify(exec);
         try {
-            const cmd = `gh pr create --base main --head ${currentBranch}`;
+            const cmd = `gh pr create --title "${finalMessage}"${finalDescription ? ` --body "${finalDescription}"` : ''} --base main --head ${currentBranch}`;
             await execAsync(cmd);
             console.log('Pull request created!');
         }
