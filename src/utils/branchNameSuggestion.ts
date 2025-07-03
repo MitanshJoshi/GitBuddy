@@ -7,6 +7,9 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
+
+
+
 export async function getBranchNameFromGemini(description: string): Promise<string> {
   const prompt = `
 Given the following branch description, suggest a concise, lowercase, kebab-case git branch name using the 'type/short-description' convention (e.g., 'feat/login-page', 'fix/typo-in-readme'). Only output the branch name.
