@@ -111,4 +111,26 @@ export async function mergeWithMain() {
     // Push updated feature branch
     await git.push('origin', currentBranch);
     console.log('Feature branch pushed to remote.');
+    const { shouldPR } = await inquirer.prompt([
+        {
+            type: 'confirm',
+            name: 'shouldPR',
+            message: 'Do you want to create a pull request for this branch?',
+            default: true,
+        }
+    ]);
+    if (shouldPR) {
+        // Create PR using GitHub CLI
+        const { exec } = await import('child_process');
+        const util = await import('util');
+        const execAsync = util.promisify(exec);
+        try {
+            const cmd = `gh pr create --base main --head ${currentBranch}`;
+            await execAsync(cmd);
+            console.log('Pull request created!');
+        }
+        catch (err) {
+            console.error('Failed to create pull request:', err);
+        }
+    }
 }
