@@ -1,75 +1,80 @@
 #!/usr/bin/env node
 import inquirer from "inquirer";
 import { makeBranch } from "./commands/makeBranch.js";
-import 'dotenv/config';
+import "dotenv/config";
 import { mergeWithMain } from "./commands/mergeWithMain.js";
-import { exec } from 'child_process';
-import util from 'util';
+import { exec } from "child_process";
+import util from "util";
 import { stashManager } from "./commands/stashManager.js";
+import { summarizeSinceLastRelease } from "./commands/summarizeSinceLastRelease.js";
 const execAsync = util.promisify(exec);
 async function mainMenu() {
-    console.log('Welcome to GitBuddy!');
+    console.log("Welcome to GitBuddy!");
     const { action } = await inquirer.prompt([
         {
-            type: 'list',
-            name: 'action',
-            message: 'What would you like to do?',
+            type: "list",
+            name: "action",
+            message: "What would you like to do?",
             choices: [
-                'Make a branch',
-                'Merge with main and commit your changes',
-                'Stash Management (list/apply/drop/create)',
-                'GitHub Account Options',
-                'Exit'
+                "Make a branch",
+                "Merge with main and commit your changes",
+                "Stash Management (list/apply/drop/create)",
+                "GitHub Account Options",
+                "Show changelog since last release",
+                "Exit",
             ],
         },
     ]);
     switch (action) {
-        case 'Make a branch':
+        case "Make a branch":
             await makeBranch();
             break;
-        case 'Merge with main and commit your changes':
+        case "Merge with main and commit your changes":
             await mergeWithMain();
             break;
-        case 'Stash Management (list/apply/drop/create)':
+        case "Stash Management (list/apply/drop/create)":
             await stashManager();
             break;
-        case 'GitHub Account Options':
+        case "GitHub Account Options":
             await githubAccountMenu();
             break;
-        case 'Exit':
-            console.log('Goodbye!');
+        case "Show changelog since last release":
+            await summarizeSinceLastRelease();
+            break;
+        case "Exit":
+            console.log("Goodbye!");
             process.exit(0);
     }
 }
 async function githubAccountMenu() {
     const { ghAction } = await inquirer.prompt([
         {
-            type: 'list',
-            name: 'ghAction',
-            message: 'GitHub Account Options:',
+            type: "list",
+            name: "ghAction",
+            message: "GitHub Account Options:",
             choices: [
-                'Switch account (interactive)',
-                'Switch to a specific account',
-                'Show authenticated accounts',
-                'Back'
-            ]
-        }
+                "Switch account (interactive)",
+                "Switch to a specific account",
+                "Show authenticated accounts",
+                "Back",
+            ],
+        },
     ]);
     switch (ghAction) {
-        case 'Switch account (interactive)':
-            await execAsync('gh auth switch');
+        case "Switch account (interactive)":
+            await execAsync("gh auth switch");
             break;
-        case 'Switch to a specific account':
+        case "Switch to a specific account":
             const { username } = await inquirer.prompt([
-                { type: 'input', name: 'username', message: 'GitHub username:' }
+                { type: "input", name: "username", message: "GitHub username:" },
             ]);
             await execAsync(`gh auth switch --user ${username}`);
             break;
-        case 'Show authenticated accounts':
-            const { stdout } = await execAsync('gh auth status');
+        case "Show authenticated accounts":
+            const { stdout } = await execAsync("gh auth status");
             console.log(stdout);
             break;
-        case 'Back':
+        case "Back":
             return;
     }
     // After action, show the menu again
