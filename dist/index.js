@@ -2,6 +2,7 @@
 import inquirer from "inquirer";
 import { makeBranch } from "./commands/makeBranch.js";
 import 'dotenv/config';
+import { mergeWithMain } from "./commands/mergeWithMain.js";
 async function mainMenu() {
     console.log('Welcome to GitBuddy!');
     const { action } = await inquirer.prompt([
@@ -22,7 +23,7 @@ async function mainMenu() {
             await makeBranch();
             break;
         case 'Merge with main and commit your changes':
-            // Call merge/commit logic
+            await mergeWithMain();
             break;
         case 'Switch GitHub account':
             // Call account switch logic
