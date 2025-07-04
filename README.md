@@ -10,8 +10,8 @@
   - Create new branches with smart, AI-suggested names or custom names.
   - Switch to new branches instantly.
 
-- **Merge with Main & Commit**
-  - Merge the latest changes from `main` into your feature branch.
+git - **Merge with default branch & Commit**
+  - Merge the latest changes from `default branch` into your feature branch.
   - AI-assisted commit message suggestions.
   - Prompts to push changes and create pull requests with customizable titles and bodies.
 
