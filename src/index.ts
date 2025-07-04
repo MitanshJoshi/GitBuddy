@@ -18,7 +18,7 @@ async function mainMenu() {
       message: "What would you like to do?",
       choices: [
         "Make a branch",
-        "Merge with main and commit your changes",
+        "Merge with default branch and commit your changes",
         "Stash Management (list/apply/drop/create)",
         "GitHub Account Options",
         "Show changelog since last release",
@@ -31,7 +31,7 @@ async function mainMenu() {
     case "Make a branch":
       await makeBranch();
       break;
-    case "Merge with main and commit your changes":
+    case "Merge with default branch and commit your changes":
       await mergeWithMain();
       break;
     case "Stash Management (list/apply/drop/create)":
