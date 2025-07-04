@@ -47,10 +47,20 @@ export async function mergeWithMain(): Promise<void> {
     await git.stash();
   }
 
-  // Checkout main and pull latest
-  console.log('Switching to main and pulling latest changes...');
-  await git.checkout('main');
-  await git.pull('origin', 'main');
+  const { exec } = await import('child_process');
+  const util = await import('util');
+  const execAsync = util.promisify(exec);
+
+  const { stdout } = await execAsync('git symbolic-ref refs/remotes/origin/HEAD');
+  const defaultBranch = stdout.trim().split('/').pop();
+
+  console.log(`Switching to ${defaultBranch} and pulling latest changes...`);
+  if (!defaultBranch) {
+    console.error('Default branch is undefined. Unable to switch.');
+    return;
+  }
+  await git.checkout(defaultBranch);
+  await git.pull('origin', defaultBranch);
 
   // Switch back to feature branch
   console.log(`Switching back to ${currentBranch}...`);
@@ -64,7 +74,7 @@ export async function mergeWithMain(): Promise<void> {
   // Merge main into feature branch
   console.log('Merging main into your feature branch...');
   try {
-    await git.merge(['main']);
+    await git.merge([defaultBranch]);
     console.log('Merge completed successfully.');
   } catch (error) {
     console.error('Merge conflicts detected. Please resolve them manually.');
