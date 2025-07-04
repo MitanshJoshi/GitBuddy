@@ -4,6 +4,36 @@ import { getCommitMessageFromAI } from '../utils/commitMessageAI.js'; // You nee
 
 const git = simpleGit();
 
+import { exec } from 'child_process';
+import { promisify } from 'util';
+const execAsync = promisify(exec);
+
+
+async function getDefaultBranch(): Promise<string | null> {
+  try {
+    // Try reading from git remote show origin
+    const { stdout } = await execAsync('git remote show origin');
+    const match = stdout.match(/HEAD branch: (.+)/);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  } catch (err) {
+    console.warn('⚠️ Failed to detect default branch from git remote show origin.');
+  }
+
+  // Fallback: Look for common default branches
+  const remoteBranches = await git.branch(['-r']);
+  const candidates = ['main', 'master', 'develop', 'trunk'];
+  const found = candidates.find(branch =>
+    remoteBranches.all.includes(`origin/${branch}`)
+  );
+  if (found) return found;
+
+  // No luck
+  return null;
+}
+
+
 async function getSuggestedCommitMessage(): Promise<{ message: string; description: string }> {
     // Get the full diff or summary
     const diff = await git.diff(['main']);
@@ -49,10 +79,8 @@ export async function mergeWithMain(): Promise<void> {
 
   const { exec } = await import('child_process');
   const util = await import('util');
-  const execAsync = util.promisify(exec);
 
-  const { stdout } = await execAsync('git symbolic-ref refs/remotes/origin/HEAD');
-  const defaultBranch = stdout.trim().split('/').pop();
+  const defaultBranch = await getDefaultBranch();
 
   console.log(`Switching to ${defaultBranch} and pulling latest changes...`);
   if (!defaultBranch) {
