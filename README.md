@@ -52,7 +52,7 @@ gitbuddy
 You'll see an interactive menu with options like:
 
 - Make a branch
-- Merge with main and commit your changes
+- Merge with default branch and commit your changes
 - Stash Management (list/apply/drop/create)
 - GitHub Account Options
 - Show changelog since last release
@@ -78,10 +78,10 @@ You'll see an interactive menu with options like:
 - Describe your intention or enter a name
 - GitBuddy suggests a branch name or uses your input
 
-### Merge with Main
+### Merge with default github branch
 
-- Choose "Merge with main and commit your changes"
-- GitBuddy pulls the latest `main`, merges, and suggests a commit message
+- Choose "Merge with default branch and commit your changes"
+- GitBuddy pulls the latest `default branch`, merges, and suggests a commit message
 - Handles stashing and unstashing automatically
 
 ### Stash Management
