@@ -5,7 +5,7 @@ const git = simpleGit();
 import { exec } from 'child_process';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
-async function getDefaultBranch() {
+export async function getDefaultBranch() {
     try {
         // Try reading from git remote show origin
         const { stdout } = await execAsync('git remote show origin');
@@ -27,19 +27,28 @@ async function getDefaultBranch() {
     return null;
 }
 async function getSuggestedCommitMessage() {
+    const defaultBranch = await getDefaultBranch();
+    if (!defaultBranch) {
+        console.error('❌ Could not determine default branch. Aborting.');
+        return {
+            message: 'default branch does not exists',
+            description: 'Set a default branch to continue',
+        };
+    }
     // Get the full diff or summary
-    const diff = await git.diff(['main']);
+    const diff = await git.diff([defaultBranch]);
     // Call your AI helper with the diff
     const aiResult = await getCommitMessageFromAI(diff);
     // Fallback if AI fails
     if (!aiResult || !aiResult.message) {
-        const diffSummary = await git.diffSummary(['main']);
+        const diffSummary = await git.diffSummary([defaultBranch]);
         const filesChanged = diffSummary.files.map(f => f.file).join(', ');
         return {
             message: filesChanged
-                ? `Merge main into feature branch, update: ${filesChanged}`
-                : 'Merge main into feature branch',
-            description: `This commit merges the latest changes from main into the current feature branch and updates the following files: ${filesChanged}`,
+                ? `Merge ${defaultBranch} into feature branch, update: ${filesChanged}`
+                : `Merge ${defaultBranch} into feature branch`,
+            description: `This commit merges the latest changes from ${defaultBranch}
+       into the current feature branch and updates the following files: ${filesChanged}`,
         };
     }
     return {
@@ -51,11 +60,12 @@ export async function mergeWithMain() {
     // Get the current branch name
     const status = await git.status();
     const currentBranch = status.current;
+    const defaultBranch = await getDefaultBranch();
     let finalMessage = '';
     let finalDescription = '';
     // Confirm the feature branch (optional, for safety)
-    if (currentBranch === 'main') {
-        console.log("You're already on main. Please switch to your feature branch first.");
+    if (currentBranch === defaultBranch) {
+        console.log(`You're already on ${defaultBranch}. Please switch to your feature branch first.`);
         return;
     }
     // Stash uncommitted changes, if any
@@ -63,9 +73,6 @@ export async function mergeWithMain() {
         console.log('Stashing your uncommitted changes...');
         await git.stash();
     }
-    const { exec } = await import('child_process');
-    const util = await import('util');
-    const defaultBranch = await getDefaultBranch();
     console.log(`Switching to ${defaultBranch} and pulling latest changes...`);
     if (!defaultBranch) {
         console.error('Default branch is undefined. Unable to switch.');
@@ -83,7 +90,7 @@ export async function mergeWithMain() {
         return;
     }
     // Merge main into feature branch
-    console.log('Merging main into your feature branch...');
+    console.log('Merging default branch into your feature branch...');
     try {
         await git.merge([defaultBranch]);
         console.log('Merge completed successfully.');
@@ -139,8 +146,8 @@ export async function mergeWithMain() {
     }
     else {
         console.log('No changes to commit after merge.');
-        finalMessage = 'Merge main into feature branch';
-        finalDescription = 'This commit merges the latest changes from main into the current feature branch.';
+        finalMessage = `Merge ${defaultBranch} into feature branch`;
+        finalDescription = `This commit merges the latest changes from ${defaultBranch} into the current feature branch.`;
     }
     // Push updated feature branch
     await git.push('origin', currentBranch);
@@ -159,7 +166,7 @@ export async function mergeWithMain() {
         const util = await import('util');
         const execAsync = util.promisify(exec);
         try {
-            const cmd = `gh pr create --title "${finalMessage}"${finalDescription ? ` --body "${finalDescription}"` : ''} --base main --head ${currentBranch}`;
+            const cmd = `gh pr create --title "${finalMessage}"${finalDescription ? ` --body "${finalDescription}"` : ''} --base ${defaultBranch} --head ${currentBranch}`;
             await execAsync(cmd);
             console.log('Pull request created!');
         }

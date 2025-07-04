@@ -9,7 +9,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 
-async function getDefaultBranch(): Promise<string | null> {
+export async function getDefaultBranch(): Promise<string | null> {
   try {
     // Try reading from git remote show origin
     const { stdout } = await execAsync('git remote show origin');
@@ -35,20 +35,29 @@ async function getDefaultBranch(): Promise<string | null> {
 
 
 async function getSuggestedCommitMessage(): Promise<{ message: string; description: string }> {
+  const defaultBranch = await getDefaultBranch();
+if (!defaultBranch) {
+  console.error('❌ Could not determine default branch. Aborting.');
+  return {
+    message: 'default branch does not exists',
+    description: 'Set a default branch to continue',
+  };
+}
     // Get the full diff or summary
-    const diff = await git.diff(['main']);
+    const diff = await git.diff([defaultBranch]);
     // Call your AI helper with the diff
     const aiResult = await getCommitMessageFromAI(diff);
   
     // Fallback if AI fails
     if (!aiResult || !aiResult.message) {
-      const diffSummary = await git.diffSummary(['main']);
+      const diffSummary = await git.diffSummary([defaultBranch]);
       const filesChanged = diffSummary.files.map(f => f.file).join(', ');
       return {
         message: filesChanged
-          ? `Merge main into feature branch, update: ${filesChanged}`
-          : 'Merge main into feature branch',
-        description: `This commit merges the latest changes from main into the current feature branch and updates the following files: ${filesChanged}`,
+          ? `Merge ${defaultBranch} into feature branch, update: ${filesChanged}`
+          : `Merge ${defaultBranch} into feature branch`,
+        description: `This commit merges the latest changes from ${defaultBranch}
+       into the current feature branch and updates the following files: ${filesChanged}`,
       };
     }
   
@@ -62,12 +71,13 @@ export async function mergeWithMain(): Promise<void> {
   // Get the current branch name
   const status = await git.status();
   const currentBranch = status.current;
+  const defaultBranch = await getDefaultBranch();
   let finalMessage = '';
   let finalDescription = '';
 
   // Confirm the feature branch (optional, for safety)
-  if (currentBranch === 'main') {
-    console.log("You're already on main. Please switch to your feature branch first.");
+  if (currentBranch === defaultBranch) {
+    console.log(`You're already on ${defaultBranch}. Please switch to your feature branch first.`);
     return;
   }
 
@@ -76,11 +86,6 @@ export async function mergeWithMain(): Promise<void> {
     console.log('Stashing your uncommitted changes...');
     await git.stash();
   }
-
-  const { exec } = await import('child_process');
-  const util = await import('util');
-
-  const defaultBranch = await getDefaultBranch();
 
   console.log(`Switching to ${defaultBranch} and pulling latest changes...`);
   if (!defaultBranch) {
@@ -100,7 +105,7 @@ export async function mergeWithMain(): Promise<void> {
   }
 
   // Merge main into feature branch
-  console.log('Merging main into your feature branch...');
+  console.log('Merging default branch into your feature branch...');
   try {
     await git.merge([defaultBranch]);
     console.log('Merge completed successfully.');
@@ -160,8 +165,8 @@ export async function mergeWithMain(): Promise<void> {
     console.log('Changes committed.');
   } else {
     console.log('No changes to commit after merge.');
-    finalMessage = 'Merge main into feature branch';
-    finalDescription = 'This commit merges the latest changes from main into the current feature branch.';
+    finalMessage = `Merge ${defaultBranch} into feature branch`;
+    finalDescription = `This commit merges the latest changes from ${defaultBranch} into the current feature branch.`;
   }
 
   // Push updated feature branch
@@ -184,7 +189,7 @@ export async function mergeWithMain(): Promise<void> {
     const execAsync = util.promisify(exec);
   
     try {
-      const cmd = `gh pr create --title "${finalMessage}"${finalDescription ? ` --body "${finalDescription}"` : ''} --base main --head ${currentBranch}`;
+      const cmd = `gh pr create --title "${finalMessage}"${finalDescription ? ` --body "${finalDescription}"` : ''} --base ${defaultBranch} --head ${currentBranch}`;
       await execAsync(cmd);
       console.log('Pull request created!');
     } catch (err) {

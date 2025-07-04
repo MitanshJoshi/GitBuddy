@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import {simpleGit} from 'simple-git';
+import { getDefaultBranch } from '../commands/mergeWithMain.js';
 
 dotenv.config({ path: '.env' });
 
@@ -47,7 +48,15 @@ export async function getCommitMessageFromAI(diff: string): Promise<{ message: s
   ) {
     text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
   } else {
-    return { message: "Merge main into feature branch", description: "" };
+    const defaultBranch = await getDefaultBranch();
+      if (!defaultBranch) {
+        console.error('❌ Could not determine default branch. Aborting.');
+        return{
+          message: 'default branch does not exists',
+          description: 'Set a default branch to continue',
+        };
+      }
+    return { message: `Merge ${defaultBranch} into feature branch`, description: "" };
   }
 
   // Remove code block formatting if present
@@ -60,6 +69,14 @@ export async function getCommitMessageFromAI(diff: string): Promise<{ message: s
       description: json.description,
     };
   } catch {
-    return { message: "Merge main into feature branch", description: "" };
+    const defaultBranch = await getDefaultBranch();
+      if (!defaultBranch) {
+        console.error('❌ Could not determine default branch. Aborting.');
+        return{
+          message: 'default branch does not exists',
+          description: 'Set a default branch to continue',
+        };
+      }
+    return { message: `Merge ${defaultBranch} into feature branch`, description: "" };
   }
 }
